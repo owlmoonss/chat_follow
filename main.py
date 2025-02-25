@@ -60,25 +60,33 @@ def retrieve_context(question):
 def query_deepseek(question, context):
     """Use DeepSeek-R1 to generate an answer based on the retrieved context."""
     formatted_prompt = f"Question: {question}\n\nContext: {context}"
+    
+    # Print the full prompt for debugging
+    print("Formatted Prompt:\n", formatted_prompt)
 
     # Query DeepSeek-R1 using Ollama
     response = llm.invoke(formatted_prompt)
 
     # Clean and return the response
     final_answer = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
-    return final_answer
+    return formatted_prompt, final_answer  # Return both prompt and answer
 
 def ask_question(question):
     """Retrieve context and generate an answer using RAG."""
-    context = retrieve_context(question)
-    answer = query_deepseek(question, context)
-    return answer
+    context = retrieve_context(question)  # Get the retrieved context
+    full_prompt, answer = query_deepseek(question, context)  # Get prompt and answer
+    
+    return context, full_prompt, answer  # Return all for UI display
 
-# Set up the Gradio interface
+# Set up the Gradio interface to display context, full prompt, and answer
 interface = gr.Interface(
     fn=ask_question,
     inputs="text",
-    outputs="text",
+    outputs=[
+        gr.Textbox(label="Retrieved Context"),  # Show retrieved text from ChromaDB
+        gr.Textbox(label="Full Prompt Sent to AI"),  # Show full input prompt
+        gr.Textbox(label="AI-generated Answer"),  # Show final AI response
+    ],
     title="RAG Chatbot: Foundations of LLMs",
     description="Ask any question about the Foundations of LLMs book. Powered by DeepSeek-R1."
 )
